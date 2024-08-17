@@ -16,15 +16,12 @@ cat > %{buildroot}%{_sysconfdir}/yum.repos.d/cloudberry-dev.repo <<EOF
 name=Cloudberry Database Repository
 baseurl=https://cloudberry-rpm-dev-bucket.s3.amazonaws.com/repo/el9/x86_64/
 enabled=1
-gpgcheck=0
+gpgcheck=1
+gpgkey=https://cloudberry-rpm-dev-bucket.s3.amazonaws.com/repo/el9/x86_64/RPM-GPG-KEY-cloudberry
 EOF
 
 %files
 %{_sysconfdir}/yum.repos.d/cloudberry-dev.repo
-
-%post
-yum clean all
-yum makecache
 
 %changelog
 * Mon Aug 16 2023 Your Name eespino@gmail.com 1.0-1
