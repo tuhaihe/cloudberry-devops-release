@@ -1,36 +1,31 @@
 Name: cloudberry-dev-repo
 Version: 1.0
 Release: 1%{?dist}
-Summary: Cloudberry Dev Repository Configuration
+Summary: Cloudberry Database Repository Configuration
 License: Apache-2.0
 Group: Development/Tools
+URL: https://github.com/cloudberrydb/cloudberrydb
 
 %description
-This package configures the Cloudberry Dev repository on your system.
+This package configures the Cloudberry Database repository on your system. Cloudberry Database is an open-source project aimed at providing a scalable, high-performance SQL database for analytics. This repository provides access to the latest RPM packages for Cloudberry Database, allowing you to easily install and stay up-to-date with the latest developments.
 
 %install
 mkdir -p %{buildroot}%{_sysconfdir}/yum.repos.d/
 cat > %{buildroot}%{_sysconfdir}/yum.repos.d/cloudberry-dev.repo <<EOF
 [cloudberry-dev]
-name=Cloudberry Dev Repository
-baseurl=https://aws-codeartifact-us-east-1.s3.amazonaws.com/cloudberry-dev/rpm-packages
+name=Cloudberry Database Repository
+baseurl=https://cloudberry-rpm-dev-bucket.s3.amazonaws.com/repo/el9/x86_64/
 enabled=1
 gpgcheck=0
 EOF
 
-cat > %{buildroot}%{_sysconfdir}/apt/sources.list.d/cloudberry-dev.list <<EOF
-deb https://aws-codeartifact-us-east-1.s3.amazonaws.com/cloudberry-dev/deb-packages /
-EOF
-
 %files
 %{_sysconfdir}/yum.repos.d/cloudberry-dev.repo
-%{_sysconfdir}/apt/sources.list.d/cloudberry-dev.list
 
 %post
 yum clean all
 yum makecache
-apt-get update
 
 %changelog
-* Mon Aug 14 2023 Your Name <your@email.com> 1.0-1
-- Initial versionng
+* Mon Aug 16 2023 Your Name eespino@gmail.com 1.0-1
+- Initial version
