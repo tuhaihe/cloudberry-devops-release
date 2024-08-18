@@ -1,4 +1,4 @@
-Name:           cbdb
+Name:           cloudberry-db
 Version:        1.5.4
 Release:        1%{?dist}
 Summary:        High-performance, open-source data warehouse based on PostgreSQL and Greenplum
@@ -11,11 +11,14 @@ Source0:        cbdb-binary.tar.gz
 %define _debugsource_template %{nil}
 
 # List runtime dependencies
+Requires:       /bin/sh
 Requires:       apr
 Requires:       audit-libs
 Requires:       bzip2-libs
 Requires:       cyrus-sasl-lib
 Requires:       glibc
+Requires:       iproute
+Requires:       iputils
 Requires:       keyutils-libs
 Requires:       krb5-libs
 Requires:       libbrotli
@@ -41,16 +44,18 @@ Requires:       libzstd
 Requires:       lz4-libs
 Requires:       ncurses-libs
 Requires:       openldap
+Requires:       openssh
+Requires:       openssh-clients
+Requires:       openssh-server
 Requires:       openssl-libs
 Requires:       pam
 Requires:       pcre2
 Requires:       perl-libs
 Requires:       python3-libs
 Requires:       readline
+Requires:       rsync
 Requires:       xz-libs
 Requires:       zlib
-Requires:       /bin/sh
-Requires:       rsync
 
 %description
 Cloudberry Database is an advanced, open-source, and highly parallel data warehouse developed from PostgreSQL and Greenplum. It offers powerful analytical capabilities and enhanced security features, making it suitable for complex data processing and analytics.
