@@ -10,7 +10,8 @@ Source0:        cloudberry-binary.tar.gz
 # Disable debugsource files
 %define _debugsource_template %{nil}
 
-Prefix:         /usr/local
+# Define the installation prefix
+%define cloudberry_prefix /usr/local
 
 # List runtime dependencies
 %if 0%{?rhel} == 8
@@ -130,9 +131,9 @@ at https://cloudberrydb.org.
 %prep
 %setup -q -c -T
 # Ensure the target directory exists
-mkdir -p %{buildroot}%{_prefix}
+mkdir -p %{buildroot}%{cloudberry_prefix}
 # Unpack the source tarball into the target directory
-tar xzf %{SOURCE0} -C %{buildroot}%{_prefix}
+tar xzf %{SOURCE0} -C %{buildroot}%{cloudberry_prefix}
 
 %build
 # Normally you'd run your build system here (e.g., make), but we're using the pre-built binary.
@@ -141,32 +142,30 @@ tar xzf %{SOURCE0} -C %{buildroot}%{_prefix}
 rm -rf %{buildroot}
 
 # Create the versioned directory
-mkdir -p %{buildroot}%{_prefix}/cloudberry-%{version}
+mkdir -p %{buildroot}%{cloudberry_prefix}/cloudberry-%{version}
 
 # Unpack the tarball
-tar xzf %{SOURCE0} -C %{buildroot}%{_prefix}/cloudberry-%{version}
+tar xzf %{SOURCE0} -C %{buildroot}%{cloudberry_prefix}/cloudberry-%{version}
 
 # Move the contents of the cloudberry directory up one level
-mv %{buildroot}%{_prefix}/cloudberry-%{version}/cloudberry/* %{buildroot}%{_prefix}/cloudberry-%{version}/
+mv %{buildroot}%{cloudberry_prefix}/cloudberry-%{version}/cloudberry/* %{buildroot}%{cloudberry_prefix}/cloudberry-%{version}/
 
 # Remove the now-empty cloudberry directory
-rmdir %{buildroot}%{_prefix}/cloudberry-%{version}/cloudberry
+rmdir %{buildroot}%{cloudberry_prefix}/cloudberry-%{version}/cloudberry
 
 # Create the symbolic link
-ln -sfn %{_prefix}/cloudberry-%{version} %{buildroot}%{_prefix}/cloudberry
-
-# No need to install LICENSE if it's already in the right place within the cloudberry-1.0.0 directory
+ln -sfn %{cloudberry_prefix}/cloudberry-%{version} %{buildroot}%{cloudberry_prefix}/cloudberry
 
 %files
-%{_prefix}/cloudberry-%{version}
-%{_prefix}/cloudberry
+%{cloudberry_prefix}/cloudberry-%{version}
+%{cloudberry_prefix}/cloudberry
 
-%license %{_prefix}/cloudberry-%{version}/LICENSE
+%license %{cloudberry_prefix}/cloudberry-%{version}/LICENSE
 
 %postun
 if [ $1 -eq 0 ] ; then
-  if [ "$(readlink -f "%{_prefix}/cloudberry")" == "%{_prefix}/cloudberry-%{version}" ]; then
-    unlink "%{_prefix}/cloudberry" || true
+  if [ "$(readlink -f "%{cloudberry_prefix}/cloudberry")" == "%{cloudberry_prefix}/cloudberry-%{version}" ]; then
+    unlink "%{cloudberry_prefix}/cloudberry" || true
   fi
 fi
 
