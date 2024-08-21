@@ -6,12 +6,13 @@ License:        Apache-2.0
 Group:          Development/Tools
 URL:            https://github.com/cloudberrydb/cloudberrydb
 
-%description This package configures the Cloudberry Database
-repository on your system. Cloudberry Database is an open-source
-project aimed at providing a scalable, high-performance SQL database
-for analytics. This repository provides access to the latest RPM
-packages for Cloudberry Database, allowing you to easily install and
-stay up-to-date with the latest developments.
+%description
+This package configures the Cloudberry Database repository on your
+system. Cloudberry Database is an open-source project aimed at
+providing a scalable, high-performance SQL database for
+analytics. This repository provides access to the latest RPM packages
+for Cloudberry Database, allowing you to easily install and stay
+up-to-date with the latest developments.
 
 %install
 mkdir -p %{buildroot}%{_sysconfdir}/yum.repos.d/
