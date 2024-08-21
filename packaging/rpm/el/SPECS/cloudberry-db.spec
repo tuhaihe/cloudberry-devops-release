@@ -1,6 +1,6 @@
 Name:           cloudberry-db
-Version:        1.5.4
-Release:        1%{?dist}
+Version:        %{version}
+Release:        %{release}%{?dist}
 Summary:        High-performance, open-source data warehouse based on PostgreSQL/Greenplum
 
 License:        ASL 2.0
