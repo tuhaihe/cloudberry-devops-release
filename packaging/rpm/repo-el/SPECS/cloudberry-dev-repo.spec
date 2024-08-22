@@ -5,6 +5,7 @@ Summary:        Cloudberry Database Repository Configuration
 License:        Apache-2.0
 Group:          Development/Tools
 URL:            https://github.com/cloudberrydb/cloudberrydb
+BuildArch:      noarch
 
 %description
 This package configures the Cloudberry Database repository on your
@@ -16,31 +17,18 @@ up-to-date with the latest developments.
 
 %install
 mkdir -p %{buildroot}%{_sysconfdir}/yum.repos.d/
-%if 0%{?rhel} == 8
 cat > %{buildroot}%{_sysconfdir}/yum.repos.d/cloudberry-dev.repo <<EOF
 [cloudberry-dev]
 name=Cloudberry Database Repository
-baseurl=https://cloudberry-rpm-dev-bucket.s3.amazonaws.com/repo/el8/x86_64/
+baseurl=https://cloudberry-rpm-dev-bucket.s3.amazonaws.com/repo/el%{rhel}/x86_64/
 enabled=1
 gpgcheck=1
-gpgkey=https://cloudberry-rpm-dev-bucket.s3.amazonaws.com/repo/el8/x86_64/RPM-GPG-KEY-cloudberry
+gpgkey=https://cloudberry-rpm-dev-bucket.s3.amazonaws.com/repo/el%{rhel}/x86_64/RPM-GPG-KEY-cloudberry
 EOF
-%endif
-
-%if 0%{?rhel} == 9
-cat > %{buildroot}%{_sysconfdir}/yum.repos.d/cloudberry-dev.repo <<EOF
-[cloudberry-dev]
-name=Cloudberry Database Repository
-baseurl=https://cloudberry-rpm-dev-bucket.s3.amazonaws.com/repo/el9/x86_64/
-enabled=1
-gpgcheck=1
-gpgkey=https://cloudberry-rpm-dev-bucket.s3.amazonaws.com/repo/el9/x86_64/RPM-GPG-KEY-cloudberry
-EOF
-%endif
 
 %files
 %{_sysconfdir}/yum.repos.d/cloudberry-dev.repo
 
 %changelog
-* Thu Aug 20 2024 Ed Espino  eespino@gmail.com - 1.6.0-15.4-1
-- Initial package with binary files under Apache 2.0 License
+* Thu Aug 21 2024 Ed Espino  eespino@gmail.com - 1.0-1
+- Initial package with repository configuration
