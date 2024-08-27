@@ -3,21 +3,36 @@
 import os
 import subprocess
 import re
+import sys
+import json
 from collections import defaultdict
-from prettytable import PrettyTable
+from datetime import datetime, timedelta
 import argparse
+from prettytable import PrettyTable
+from dateutil import parser
+import shutil
+
+CACHE_FILE = 'high_level_packages_cache.json'
+CACHE_EXPIRY_DAYS = 7
+
+def check_requirements():
+    required_commands = ['ldd', 'file', 'rpm', 'repoquery']
+    missing_commands = []
+
+    for cmd in required_commands:
+        if shutil.which(cmd) is None:
+            missing_commands.append(cmd)
+
+    if missing_commands:
+        print("Error: The following required commands are missing:")
+        for cmd in missing_commands:
+            print(f"  - {cmd}")
+        print("\nPlease install these commands and try again.")
+        if 'repoquery' in missing_commands:
+            print("Note: 'repoquery' is typically part of the 'yum-utils' package.")
+        sys.exit(1)
 
 def run_command(command):
-    """
-    Executes a command using subprocess and returns the decoded output.
-
-    Args:
-        command (list): A list of command arguments to be executed.
-
-    Returns:
-        str: The decoded output of the command.
-        None: If the command fails to execute.
-    """
     try:
         return subprocess.check_output(command, stderr=subprocess.STDOUT).decode('utf-8')
     except subprocess.CalledProcessError as e:
@@ -25,29 +40,10 @@ def run_command(command):
         return None
 
 def parse_ldd_line(line):
-    """
-    Parses a single line of `ldd` output to extract the library path.
-
-    Args:
-        line (str): A single line of `ldd` output.
-
-    Returns:
-        str: The path to the shared library, if found.
-        None: If no valid library path is found in the line.
-    """
     match = re.search(r'\s*(\S+) => (\S+) \((0x[0-9a-f]+)\)', line)
-    return match.group(2) if match else None
+    return match.group(1) if match else None
 
 def find_library_in_ld_library_path(lib_name):
-    """
-    Searches for a shared library in the directories specified by LD_LIBRARY_PATH.
-
-    Args:
-        lib_name (str): The name of the library to find.
-
-    Returns:
-        str: The full path to the library if found, or None if not found.
-    """
     ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
     for directory in ld_library_path.split(':'):
         potential_path = os.path.join(directory, lib_name)
@@ -56,17 +52,6 @@ def find_library_in_ld_library_path(lib_name):
     return None
 
 def get_package_info(lib_path):
-    """
-    Retrieves package information for a given library file.
-
-    Args:
-        lib_path (str): The path to the shared library file.
-
-    Returns:
-        tuple: A tuple containing the package name and the full package name.
-        None: If the package information could not be retrieved.
-    """
-    # If the library is not found, check in LD_LIBRARY_PATH
     if not os.path.isfile(lib_path):
         lib_name = os.path.basename(lib_path)
         lib_path = find_library_in_ld_library_path(lib_name)
@@ -82,14 +67,43 @@ def get_package_info(lib_path):
         pass
     return None
 
-def print_summary(packages, special_cases):
-    """
-    Prints a summary of the unique runtime packages required and any special cases.
+def get_package_dependencies(package):
+    try:
+        output = subprocess.check_output(['repoquery', '--requires', '--resolve', package],
+                                         universal_newlines=True, stderr=subprocess.DEVNULL)
+        return set(output.strip().split('\n'))
+    except subprocess.CalledProcessError:
+        return set()
 
-    Args:
-        packages (list): A list of tuples containing package names and full package names.
-        special_cases (list): A list of special cases where the package could not be identified.
-    """
+def build_high_level_packages(grand_summary):
+    all_packages = set()
+    for packages in grand_summary.values():
+        all_packages.update(package.split('-')[0] for package in packages)
+
+    high_level_packages = {}
+    for package in all_packages:
+        deps = get_package_dependencies(package)
+        if deps:
+            high_level_packages[package] = [dep.split('-')[0] for dep in deps]
+
+    return high_level_packages
+
+def load_or_build_high_level_packages(grand_summary, force_rebuild=False):
+    if not force_rebuild and os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, 'r') as f:
+            cache_data = json.load(f)
+        if datetime.now() - parser.parse(cache_data['timestamp']) < timedelta(days=CACHE_EXPIRY_DAYS):
+            return cache_data['packages']
+
+    packages = build_high_level_packages(grand_summary)
+    with open(CACHE_FILE, 'w') as f:
+        json.dump({
+            'timestamp': datetime.now().isoformat(),
+            'packages': packages
+        }, f)
+    return packages
+
+def print_summary(packages, special_cases, missing_libraries, binary_path):
     print("\nSummary of unique runtime packages required:")
     table = PrettyTable(['Package Name', 'Full Package Name'])
     table.align['Package Name'] = 'l'
@@ -100,174 +114,184 @@ def print_summary(packages, special_cases):
         table.add_row([package_name, full_package_name])
     print(table)
 
+    if missing_libraries:
+        print("\nMISSING LIBRARIES:")
+        missing_table = PrettyTable(['Missing Library', 'Referenced By'])
+        missing_table.align['Missing Library'] = 'l'
+        missing_table.align['Referenced By'] = 'l'
+        for lib in missing_libraries:
+            missing_table.add_row([lib, binary_path])
+        print(missing_table)
+
     if special_cases:
-        print("\nSpecial Cases:")
-        for case in sorted(set(special_cases)):
-            print(case)
+        print("\nSPECIAL CASES:")
+        special_table = PrettyTable(['Library/Case', 'Referenced By', 'Category'])
+        special_table.align['Library/Case'] = 'l'
+        special_table.align['Referenced By'] = 'l'
+        special_table.align['Category'] = 'l'
+        for case in special_cases:
+            category = "Custom/Non-RPM" if "custom or non-RPM library" in case else "Other"
+            library = case.split(" is ")[0] if " is " in case else case
+            special_table.add_row([library, binary_path, category])
+        print(special_table)
+    else:
+        print("\nSPECIAL CASES: None found")
 
 def process_binary(binary_path):
-    """
-    Processes a single binary file to determine its runtime package dependencies.
-
-    Args:
-        binary_path (str): The path to the binary file to be processed.
-
-    Returns:
-        list: A list of tuples containing package names and full package names.
-        list: A list of special cases where the package could not be identified.
-    """
     print(f"Binary: {binary_path}\n")
     print("Libraries and their corresponding packages:")
 
     packages = []
     special_cases = []
+    missing_libraries = []
     known_special_cases = ['linux-vdso.so.1', 'ld-linux-x86-64.so.2']
 
     ldd_output = run_command(['ldd', binary_path])
     if ldd_output is None:
-        return packages, special_cases
+        return packages, special_cases, missing_libraries
 
     for line in ldd_output.splitlines():
         if any(special in line for special in known_special_cases):
-            continue  # Skip known special cases
+            continue
 
-        lib_path = parse_ldd_line(line)
-        if lib_path:
-            package_info = get_package_info(lib_path)
-            if package_info:
-                print(f"{lib_path} => {package_info[1]}")
-                packages.append(package_info)
-            else:
-                # Custom or non-RPM library handling
-                if os.path.exists(lib_path):
-                    special_case = f"{lib_path} is a custom or non-RPM library"
-                else:
-                    special_case = f"{lib_path} is not found and might be a special case"
-                special_cases.append(special_case)
-                print(f"{lib_path} => {special_case}")
+        parts = line.split('=>')
+        lib_name = parts[0].strip()
+
+        if "not found" in line:
+            missing_libraries.append(lib_name)
+            print(f"MISSING: {line.strip()}")
         else:
-            special_case = f"{lib_path} is a special case or built-in library"
-            special_cases.append(special_case)
-            print(f"{lib_path} => {special_case}")
+            if len(parts) > 1:
+                lib_path = parts[1].split()[0]
+                if lib_path != "not":
+                    package_info = get_package_info(lib_path)
+                    if package_info:
+                        print(f"{lib_path} => {package_info[1]}")
+                        packages.append(package_info)
+                    else:
+                        if os.path.exists(lib_path):
+                            special_case = f"{lib_path} is a custom or non-RPM library"
+                            special_cases.append(special_case)
+                            print(f"{lib_path} => Custom or non-RPM library")
+                        else:
+                            special_case = f"{lib_path} is not found and might be a special case"
+                            special_cases.append(special_case)
+                            print(f"{lib_path} => Not found, might be a special case")
+                else:
+                    special_case = f"{line.strip()} is a special case or built-in library"
+                    special_cases.append(special_case)
+                    print(f"{line.strip()} => Special case or built-in library")
+            else:
+                special_case = f"{line.strip()} is a special case or built-in library"
+                special_cases.append(special_case)
+                print(f"{line.strip()} => Special case or built-in library")
 
-    print_summary(packages, special_cases)
+    if special_cases:
+        print(f"Special cases found for {binary_path}:")
+        for case in special_cases:
+            print(f"  - {case}")
+    else:
+        print(f"No special cases found for {binary_path}")
+
+    print_summary(packages, special_cases, missing_libraries, binary_path)
     print("-------------------------------------------")
-    return packages, special_cases
-
-def process_directory(directory):
-    """
-    Recursively processes all ELF binaries within a directory to determine their runtime package dependencies.
-
-    Args:
-        directory (str): The path to the directory to be processed.
-    """
-    grand_summary = defaultdict(set)
-    grand_special_cases = []
-
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            file_path = os.path.join(root, file)
-            if is_elf_binary(file_path):
-                packages, special_cases = process_binary(file_path)
-                for package_name, full_package_name in packages:
-                    grand_summary[package_name].add(full_package_name)
-                grand_special_cases.extend(special_cases)
-
-    print_grand_summary(grand_summary, grand_special_cases)
+    return packages, special_cases, missing_libraries
 
 def is_elf_binary(file_path):
-    """
-    Checks whether a given file is an ELF binary (executable or shared object).
-
-    Args:
-        file_path (str): The path to the file to be checked.
-
-    Returns:
-        bool: True if the file is an ELF binary, False otherwise.
-    """
     file_output = run_command(['file', file_path])
     return 'ELF' in file_output and ('executable' in file_output or 'shared object' in file_output)
 
-def print_grand_summary(grand_summary, grand_special_cases):
-    """
-    Prints a grand summary of unique runtime packages required and special cases across all processed binaries.
+def print_grand_summary(grand_summary, grand_special_cases, grand_missing_libraries, HIGH_LEVEL_PACKAGES, PACKAGE_TO_HIGH_LEVEL):
+    if grand_summary or grand_special_cases or grand_missing_libraries:
+        print("\nGrand Summary of high-level runtime packages required across all binaries:")
+        high_level_summary = defaultdict(set)
 
-    Args:
-        grand_summary (defaultdict): A dictionary mapping package names to sets of full package names.
-        grand_special_cases (list): A list of special cases encountered during processing.
-    """
-    if grand_summary or grand_special_cases:
-        print("\nGrand Summary of unique runtime packages required across all binaries:")
-        table = PrettyTable(['Package Name', 'Full Package Name'])
-        table.align['Package Name'] = 'l'
-        table.align['Full Package Name'] = 'l'
+        for package_name, full_package_names in grand_summary.items():
+            high_level_package = PACKAGE_TO_HIGH_LEVEL.get(package_name.split('-')[0], package_name.split('-')[0])
+            high_level_summary[high_level_package].update(full_package_names)
 
-        for package_name, full_package_names in sorted(grand_summary.items()):
-            for full_package_name in sorted(full_package_names):
-                table.add_row([package_name, full_package_name])
+        table = PrettyTable(['High-Level Package', 'Included Packages'])
+        table.align['High-Level Package'] = 'l'
+        table.align['Included Packages'] = 'l'
+
+        for high_level_package, full_package_names in sorted(high_level_summary.items()):
+            included_packages = '\n'.join(sorted(full_package_names))
+            table.add_row([high_level_package, included_packages])
         print(table)
 
+        if grand_missing_libraries:
+            print("\nGrand Summary of MISSING LIBRARIES across all binaries:")
+            missing_table = PrettyTable(['Missing Library', 'Referenced By'])
+            missing_table.align['Missing Library'] = 'l'
+            missing_table.align['Referenced By'] = 'l'
+            for lib, binaries in sorted(grand_missing_libraries.items()):
+                missing_table.add_row([lib, '\n'.join(sorted(binaries))])
+            print(missing_table)
+
+        print("\nGrand Summary of special cases across all binaries:")
         if grand_special_cases:
-            print("\nGrand Summary of special cases across all binaries:")
-            for case in sorted(set(grand_special_cases)):
-                print(case)
+            special_table = PrettyTable(['Library/Case', 'Referenced By', 'Category'])
+            special_table.align['Library/Case'] = 'l'
+            special_table.align['Referenced By'] = 'l'
+            special_table.align['Category'] = 'l'
 
-# Main entry point
-if __name__ == '__main__':
-    """
-    Main function that parses command-line arguments and processes the specified binary file or directory.
+            for case, binary in sorted(set(grand_special_cases)):
+                category = "Custom/Non-RPM" if "custom or non-RPM library" in case else "Other"
+                library = case.split(" is ")[0] if " is " in case else case
+                special_table.add_row([library, binary, category])
 
-    Usage:
-        python elf_dependency_analyzer.py -f <binary_file1> <binary_file2> ...
-        python elf_dependency_analyzer.py -d <directory_path>
+            print(special_table)
+        else:
+            print("No special cases found.")
 
-    Options:
-        -f, --file : Specify one or more individual binary files to review.
-        -d, --dir  : Specify a directory to recursively review all ELF binary files.
+def analyze_path(path, grand_summary, grand_special_cases, grand_missing_libraries):
+    if os.path.isfile(path):
+        packages, special_cases, missing_libraries = process_binary(path)
+        for package_name, full_package_name in packages:
+            grand_summary[package_name].add(full_package_name)
+        grand_special_cases.extend((case, path) for case in special_cases)
+        for lib in missing_libraries:
+            grand_missing_libraries[lib].add(path)
+    elif os.path.isdir(path):
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                if is_elf_binary(file_path):
+                    packages, special_cases, missing_libraries = process_binary(file_path)
+                    for package_name, full_package_name in packages:
+                        grand_summary[package_name].add(full_package_name)
+                    grand_special_cases.extend((case, file_path) for case in special_cases)
+                    for lib in missing_libraries:
+                        grand_missing_libraries[lib].add(file_path)
+    else:
+        print(f"Error: {path} is neither a valid file nor a directory.")
 
-    Description:
-        This script processes ELF binary files to determine their runtime package dependencies.
-        It uses the `ldd` command to list shared libraries required by the binaries and then
-        identifies the packages owning those libraries using `rpm`. The results are displayed
-        in a structured table format, and any special cases (e.g., libraries not owned by any package)
-        are highlighted separately.
+    if grand_special_cases:
+        print(f"Accumulated special cases after processing {path}:")
+        for case, binary in grand_special_cases:
+            print(f"  - {case} (in {binary})")
+    else:
+        print(f"No special cases accumulated after processing {path}")
 
-        The script can be run in two modes:
-        1. File Mode: Specify one or more individual binary files to analyze.
-        2. Directory Mode: Specify a directory to recursively find and analyze all ELF binaries.
+def main():
+    check_requirements()
 
-        The final output includes a summary of unique runtime packages required across all processed binaries.
-    """
-    parser = argparse.ArgumentParser(description="Process ELF binaries to determine runtime package dependencies.")
-
-    # Short and long options for --file, using nargs='+' to handle multiple files with a single -f
-    parser.add_argument('-f', '--file', type=str, nargs='+', help="Specify one or more individual files to review.")
-
-    # Short and long options for --dir
-    parser.add_argument('-d', '--dir', type=str, help="Specify a directory to recursively review all binary files.")
-
+    parser = argparse.ArgumentParser(description="ELF Dependency Analyzer")
+    parser.add_argument('paths', nargs='+', help="Paths to files or directories to analyze")
+    parser.add_argument('--rebuild-cache', action='store_true', help="Force rebuild of the high-level packages cache")
     args = parser.parse_args()
 
     grand_summary = defaultdict(set)
     grand_special_cases = []
+    grand_missing_libraries = defaultdict(set)
 
-    if args.file:
-        for file in args.file:
-            if os.path.isfile(file):
-                packages, special_cases = process_binary(file)
-                # Accumulate results for the grand summary
-                for package_name, full_package_name in packages:
-                    grand_summary[package_name].add(full_package_name)
-                grand_special_cases.extend(special_cases)
-            else:
-                print(f"Error: {file} is not a valid file.")
+    for path in args.paths:
+        analyze_path(path, grand_summary, grand_special_cases, grand_missing_libraries)
 
-        # Only print the grand summary if more than one file was processed
-        if len(args.file) > 1:
-            print_grand_summary(grand_summary, grand_special_cases)
+    HIGH_LEVEL_PACKAGES = load_or_build_high_level_packages(grand_summary, args.rebuild_cache)
+    PACKAGE_TO_HIGH_LEVEL = {low: high for high, lows in HIGH_LEVEL_PACKAGES.items() for low in lows}
 
-    elif args.dir:
-        if os.path.isdir(args.dir):
-            process_directory(args.dir)
-        else:
-            print(f"Error: {args.dir} is not a valid directory.")
+    print_grand_summary(grand_summary, grand_special_cases, grand_missing_libraries, HIGH_LEVEL_PACKAGES, PACKAGE_TO_HIGH_LEVEL)
+
+if __name__ == '__main__':
+    main()
