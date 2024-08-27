@@ -2,9 +2,10 @@ Name:           cloudberry-dev-repo
 Version:        1.0
 Release:        1%{?dist}
 Summary:        Cloudberry Database Repository Configuration
-License:        Apache-2.0
-Group:          Development/Tools
-URL:            https://github.com/cloudberrydb/cloudberrydb
+License:        ASL 2.0
+Group:          Applications/Databases
+URL:            https://cloudberrydb.org
+Vendor:         Cloudberry Open Source
 BuildArch:      noarch
 
 %description

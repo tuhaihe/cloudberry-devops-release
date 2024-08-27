@@ -5,6 +5,7 @@ Summary:        High-performance, open-source data warehouse based on PostgreSQL
 
 License:        ASL 2.0
 URL:            https://cloudberrydb.org
+Vendor:         Cloudberry Open Source
 Source0:        cloudberry-binary.tar.gz
 
 # Disable debugsource files
@@ -14,116 +15,79 @@ Source0:        cloudberry-binary.tar.gz
 %define cloudberry_prefix /usr/local
 
 # List runtime dependencies
-%if 0%{?rhel} == 8
-Requires:       /bin/sh
-Requires:       apr
-Requires:       audit-libs
-Requires:       brotli
-Requires:       bzip2-libs
-Requires:       cyrus-sasl-lib
-Requires:       glibc
+
+Requires:       bash
 Requires:       iproute
 Requires:       iputils
-Requires:       keyutils-libs
-Requires:       krb5-libs
-Requires:       libcap-ng
-Requires:       libcom_err
-Requires:       libcurl
-Requires:       libevent
-Requires:       libgcc
-Requires:       libidn2
-Requires:       libnghttp2
-Requires:       libpsl
-Requires:       libselinux
-Requires:       libssh
-Requires:       libstdc++
-Requires:       libunistring
-Requires:       libuuid
-Requires:       libuv
-Requires:       libxcrypt
-Requires:       libxml2
-Requires:       libyaml
-Requires:       libzstd
-Requires:       lz4-libs
-Requires:       ncurses-libs
-Requires:       openldap
 Requires:       openssh
 Requires:       openssh-clients
 Requires:       openssh-server
-Requires:       openssl-libs
-Requires:       pam
-Requires:       pcre2
-Requires:       perl
-Requires:       perl-libs
-Requires:       python3
-Requires:       python3-libs
-Requires:       readline
 Requires:       rsync
-Requires:       xz-libs
-Requires:       zlib
+
+%if 0%{?rhel} == 8
+Requires:       apr
+Requires:       audit
+Requires:       bzip2
+Requires:       keyutils
+Requires:       libcurl
+Requires:       libevent
+Requires:       libidn2
+Requires:       libselinux
+Requires:       libstdc++
+Requires:       libuuid
+Requires:       libuv
+Requires:       libxml2
+Requires:       libyaml
+Requires:       libzstd
+Requires:       lz4
+Requires:       openldap
+Requires:       pam
+Requires:       perl
+Requires:       python3
+Requires:       readline
 %endif
 
 %if 0%{?rhel} == 9
-Requires:       /bin/sh
 Requires:       apr
-Requires:       audit-libs
-Requires:       bzip2-libs
-Requires:       cyrus-sasl-lib
+Requires:       bzip2
 Requires:       glibc
-Requires:       iproute
-Requires:       iputils
-Requires:       keyutils-libs
-Requires:       krb5-libs
-Requires:       libbrotli
-Requires:       libcap-ng
-Requires:       libcom_err
+Requires:       keyutils
+Requires:       libcap
 Requires:       libcurl
-Requires:       libeconf
-Requires:       libevent
-Requires:       libgcc
 Requires:       libidn2
-Requires:       libnghttp2
 Requires:       libpsl
-Requires:       libselinux
 Requires:       libssh
 Requires:       libstdc++
-Requires:       libunistring
-Requires:       libuuid
-Requires:       libuv
-Requires:       libxcrypt
 Requires:       libxml2
 Requires:       libyaml
 Requires:       libzstd
-Requires:       lz4-libs
-Requires:       ncurses-libs
+Requires:       lz4
 Requires:       openldap
-Requires:       openssh
-Requires:       openssh-clients
-Requires:       openssh-server
-Requires:       openssl-libs
 Requires:       pam
 Requires:       pcre2
-Requires:       perl-libs
-Requires:       python3-libs
 Requires:       readline
-Requires:       rsync
-Requires:       xz-libs
-Requires:       zlib
+Requires:       xz
 %endif
 
 %description
-Cloudberry Database is an advanced, open-source, and highly parallel
-data warehouse developed from PostgreSQL and Greenplum. It offers
-powerful analytical capabilities and enhanced security features,
-making it suitable for complex data processing and analytics.
+
+Cloudberry Database is an advanced, open-source, massively parallel
+processing (MPP) data warehouse developed from PostgreSQL and
+Greenplum. It is designed for high-performance analytics on
+large-scale data sets, offering powerful analytical capabilities and
+enhanced security features.
 
 Key Features:
-- Parallel query execution for optimized performance
-- Integration with various ETL and BI tools
-- Compatibility with multiple data sources and formats
 
-Cloudberry Database is ideal for use cases requiring both batch
-processing and real-time data warehousing.
+- Massively parallel processing for optimized performance
+- Advanced analytics for complex data processing
+- Integration with ETL and BI tools
+- Compatibility with multiple data sources and formats
+- Enhanced security features
+
+Cloudberry Database supports both batch processing and real-time data
+warehousing, making it a versatile solution for modern data
+environments.
 
 For more information, visit the official Cloudberry Database website
 at https://cloudberrydb.org.
@@ -155,6 +119,12 @@ rmdir %{buildroot}%{cloudberry_prefix}/cloudberry-%{version}/cloudberry
 
 # Create the symbolic link
 ln -sfn %{cloudberry_prefix}/cloudberry-%{version} %{buildroot}%{cloudberry_prefix}/cloudberry
+
+# Change ownership to gpadmin.gpadmin if the gpadmin user exists
+if id "gpadmin" &>/dev/null; then
+    chown -R gpadmin:gpadmin %{buildroot}%{cloudberry_prefix}/cloudberry-%{version}
+fi
+
 
 %files
 %{cloudberry_prefix}/cloudberry-%{version}
