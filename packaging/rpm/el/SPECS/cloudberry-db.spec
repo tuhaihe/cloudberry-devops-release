@@ -123,17 +123,17 @@ rmdir %{buildroot}%{cloudberry_prefix}/cloudberry-%{version}/cloudberry
 # Create the symbolic link
 ln -sfn %{cloudberry_prefix}/cloudberry-%{version} %{buildroot}%{cloudberry_prefix}/cloudberry
 
-# Change ownership to gpadmin.gpadmin if the gpadmin user exists
-if id "gpadmin" &>/dev/null; then
-    chown -R gpadmin:gpadmin %{buildroot}%{cloudberry_prefix}/cloudberry-%{version}
-fi
-
-
 %files
 %{cloudberry_prefix}/cloudberry-%{version}
 %{cloudberry_prefix}/cloudberry
 
 %license %{cloudberry_prefix}/cloudberry-%{version}/LICENSE
+
+%post
+# Change ownership to gpadmin.gpadmin if the gpadmin user exists
+if id "gpadmin" &>/dev/null; then
+    chown -R gpadmin:gpadmin %{cloudberry_prefix}/cloudberry-%{version}
+fi
 
 %postun
 if [ $1 -eq 0 ] ; then
@@ -143,5 +143,5 @@ if [ $1 -eq 0 ] ; then
 fi
 
 %changelog
-* Thu Aug 20 2024 Ed Espino  eespino@gmail.com - 1.5.4-1
+* Wed Aug 28 2024 Ed Espino  eespino@gmail.com - 1.6.0-rc1
 - Initial package with binary files under Apache 2.0 License
