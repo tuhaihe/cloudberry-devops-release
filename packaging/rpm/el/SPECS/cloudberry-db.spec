@@ -8,6 +8,9 @@ URL:            https://cloudberrydb.org
 Vendor:         Cloudberry Open Source
 Source0:        cloudberry-binary.tar.gz
 
+# Disabled as we are shipping GO programs (e.g. gpbackup)
+%define _missing_build_ids_terminate_build 0
+
 # Disable debugsource files
 %define _debugsource_template %{nil}
 
