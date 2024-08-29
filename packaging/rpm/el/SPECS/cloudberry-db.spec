@@ -6,6 +6,7 @@ Summary:        High-performance, open-source data warehouse based on PostgreSQL
 License:        ASL 2.0
 URL:            https://cloudberrydb.org
 Vendor:         Cloudberry Open Source
+Group:          Applications/Databases
 Source0:        cloudberry-binary.tar.gz
 
 # Disabled as we are shipping GO programs (e.g. gpbackup)
