@@ -142,7 +142,3 @@ if [ $1 -eq 0 ] ; then
     unlink "%{cloudberry_prefix}/cloudberry" || true
   fi
 fi
-
-%changelog
-* Wed Aug 28 2024 Ed Espino  eespino@gmail.com - 1.6.0-rc1
-- Initial package with binary files under Apache 2.0 License
