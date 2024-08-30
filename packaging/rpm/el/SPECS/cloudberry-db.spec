@@ -1,3 +1,5 @@
+%define cloudberry_install_dir /usr/local/cloudberry
+
 Name:           cloudberry-db
 Version:        %{version}
 Release:        %{release}%{?dist}
@@ -7,16 +9,13 @@ License:        ASL 2.0
 URL:            https://cloudberrydb.org
 Vendor:         Cloudberry Open Source
 Group:          Applications/Databases
-Source0:        cloudberry-binary.tar.gz
+Prefix:         %{cloudberry_install_dir}
 
 # Disabled as we are shipping GO programs (e.g. gpbackup)
 %define _missing_build_ids_terminate_build 0
 
 # Disable debugsource files
 %define _debugsource_template %{nil}
-
-# Define the installation prefix
-%define cloudberry_prefix /usr/local
 
 # List runtime dependencies
 
@@ -97,48 +96,37 @@ For more information, visit the official Cloudberry Database website
 at https://cloudberrydb.org.
 
 %prep
-%setup -q -c -T
-# Ensure the target directory exists
-mkdir -p %{buildroot}%{cloudberry_prefix}
-# Unpack the source tarball into the target directory
-tar xzf %{SOURCE0} -C %{buildroot}%{cloudberry_prefix}
+# No prep needed for binary RPM
 
 %build
-# Normally you'd run your build system here (e.g., make), but we're using the pre-built binary.
+# No prep needed for binary RPM
 
 %install
 rm -rf %{buildroot}
 
 # Create the versioned directory
-mkdir -p %{buildroot}%{cloudberry_prefix}/cloudberry-%{version}
+mkdir -p %{buildroot}%{cloudberry_install_dir}-%{version}
 
-# Unpack the tarball
-tar xzf %{SOURCE0} -C %{buildroot}%{cloudberry_prefix}/cloudberry-%{version}
-
-# Move the contents of the cloudberry directory up one level
-mv %{buildroot}%{cloudberry_prefix}/cloudberry-%{version}/cloudberry/* %{buildroot}%{cloudberry_prefix}/cloudberry-%{version}/
-
-# Remove the now-empty cloudberry directory
-rmdir %{buildroot}%{cloudberry_prefix}/cloudberry-%{version}/cloudberry
+cp -R %{cloudberry_install_dir}/* %{buildroot}%{cloudberry_install_dir}-%{version}
 
 # Create the symbolic link
-ln -sfn %{cloudberry_prefix}/cloudberry-%{version} %{buildroot}%{cloudberry_prefix}/cloudberry
+ln -sfn %{cloudberry_install_dir}-%{version} %{buildroot}%{cloudberry_install_dir}
 
 %files
-%{cloudberry_prefix}/cloudberry-%{version}
-%{cloudberry_prefix}/cloudberry
+%{prefix}-%{version}
+%{prefix}
 
-%license %{cloudberry_prefix}/cloudberry-%{version}/LICENSE
+%license %{cloudberry_install_dir}-%{version}/LICENSE
 
 %post
 # Change ownership to gpadmin.gpadmin if the gpadmin user exists
 if id "gpadmin" &>/dev/null; then
-    chown -R gpadmin:gpadmin %{cloudberry_prefix}/cloudberry-%{version}
+    chown -R gpadmin:gpadmin %{cloudberry_install_dir}-%{version}
 fi
 
 %postun
 if [ $1 -eq 0 ] ; then
-  if [ "$(readlink -f "%{cloudberry_prefix}/cloudberry")" == "%{cloudberry_prefix}/cloudberry-%{version}" ]; then
-    unlink "%{cloudberry_prefix}/cloudberry" || true
+  if [ "$(readlink -f "%{cloudberry_install_dir}")" == "%{cloudberry_install_dir}-%{version}" ]; then
+    unlink "%{cloudberry_install_dir}" || true
   fi
 fi
