@@ -1,4 +1,4 @@
-%define cloudberry_install_dir /usr/local/cloudberry
+%define cloudberry_install_dir /usr/local/cloudberry-db
 
 Name:           cloudberry-db
 Version:        %{version}
