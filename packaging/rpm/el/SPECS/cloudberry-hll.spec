@@ -1,5 +1,5 @@
 %global cloudberry_version %{?_cloudberry_version}%{!?_cloudberry_version:1.6}
-%global cloudberry_install_dir /usr/local/cloudberry
+%global cloudberry_install_dir /usr/local/cloudberry-db
 
 Name:           cloudberry-hll
 Version:        2.18.0
