@@ -122,6 +122,7 @@ ln -sfn %{cloudberry_install_dir}-%{version} %{buildroot}%{cloudberry_install_di
 # Change ownership to gpadmin.gpadmin if the gpadmin user exists
 if id "gpadmin" &>/dev/null; then
     chown -R gpadmin:gpadmin %{cloudberry_install_dir}-%{version}
+    chown gpadmin:gpadmin %{cloudberry_install_dir}
 fi
 
 %postun
