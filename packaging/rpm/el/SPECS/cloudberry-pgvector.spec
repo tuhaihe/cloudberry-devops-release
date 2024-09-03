@@ -2,7 +2,7 @@
 %global cloudberry_install_dir /usr/local/cloudberry-db
 
 Name:           cloudberry-pgvector
-Version:        0.7.4
+Version:        0.5.1
 Release:        %{release}%{?dist}
 Summary:        pgvector extension for Cloudberry Database %{cloudberry_version}
 License:        PostgreSQL
