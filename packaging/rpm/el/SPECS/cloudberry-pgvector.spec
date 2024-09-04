@@ -1,9 +1,10 @@
 %global cloudberry_version %{?_cloudberry_version}%{!?_cloudberry_version:1.6}
 %global cloudberry_install_dir /usr/local/cloudberry-db
+%global pgvector_version %{?_pgvector_version}%{!?_pgvector_version:0.5.1}
 
 Name:           cloudberry-pgvector
-Version:        0.5.1
-Release:        %{release}%{?dist}
+Version:        %{pgvector_version}
+Release:        %{?release}%{!?release:1}
 Summary:        pgvector extension for Cloudberry Database %{cloudberry_version}
 License:        PostgreSQL
 URL:            https://github.com/pgvector/pgvector
@@ -29,13 +30,10 @@ efficient similarity search operations on high-dimensional data.
 mkdir -p %{buildroot}%{prefix}/include/postgresql/server/extension/vector \
          %{buildroot}%{prefix}/lib/postgresql                             \
          %{buildroot}%{prefix}/share/postgresql/extension
-
 cp -R %{cloudberry_install_dir}/include/postgresql/server/extension/vector/* \
       %{buildroot}%{prefix}/include/postgresql/server/extension/vector
-
 cp -R %{cloudberry_install_dir}/lib/postgresql/vector.so \
       %{buildroot}%{prefix}/lib/postgresql/vector.so
-
 cp -R %{cloudberry_install_dir}/share/postgresql/extension/vector* \
       %{buildroot}%{prefix}/share/postgresql/extension
 
@@ -46,10 +44,10 @@ cp -R %{cloudberry_install_dir}/share/postgresql/extension/vector* \
 %{prefix}/share/postgresql/extension/vector.control
 
 %post
-echo "pgvector extension for Cloudberry Database %{cloudberry_version} has been installed in %{prefix}."
+echo "pgvector extension version %{version} for Cloudberry Database %{cloudberry_version} has been installed in %{prefix}."
 echo "To enable it in a database, run:"
 echo "  CREATE EXTENSION vector;"
 
 %postun
-echo "pgvector extension for Cloudberry Database %{cloudberry_version} has been removed from %{prefix}."
+echo "pgvector extension version %{version} for Cloudberry Database %{cloudberry_version} has been removed from %{prefix}."
 echo "You may need to manually clean up any database objects that were using the extension."

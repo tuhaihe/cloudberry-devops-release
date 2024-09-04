@@ -3,7 +3,7 @@
 
 Name:           cloudberry-hll
 Version:        2.18.0
-Release:        %{release}%{?dist}
+Release:        %{?release}%{!?release:1}
 Summary:        HyperLogLog extension for Cloudberry Database %{cloudberry_version}
 License:        ASL 2.0
 URL:            https://github.com/citusdata/postgresql-hll
