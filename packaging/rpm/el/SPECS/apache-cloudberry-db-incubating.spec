@@ -1,13 +1,13 @@
 %define cloudberry_install_dir /usr/local/cloudberry-db
 
-Name:           cloudberry-db
+Name:           apache-cloudberry-db-incubating
 Version:        %{version}
 Release:        %{release}%{?dist}
 Summary:        High-performance, open-source data warehouse based on PostgreSQL/Greenplum
 
 License:        ASL 2.0
-URL:            https://cloudberrydb.org
-Vendor:         Cloudberry Open Source
+URL:            https://cloudberry.apache.org
+Vendor:         Apache Cloudberry (incubating)
 Group:          Applications/Databases
 Prefix:         %{cloudberry_install_dir}
 
@@ -68,14 +68,15 @@ Requires:       lz4
 Requires:       openldap
 Requires:       pam
 Requires:       pcre2
+Requires:       perl
 Requires:       readline
 Requires:       xz
 %endif
 
 %description
 
-Cloudberry Database is an advanced, open-source, massively parallel
-processing (MPP) data warehouse developed from PostgreSQL and
+Apache Cloudberry (incubating) is an advanced, open-source, massively
+parallel processing (MPP) data warehouse developed from PostgreSQL and
 Greenplum. It is designed for high-performance analytics on
 large-scale data sets, offering powerful analytical capabilities and
 enhanced security features.
@@ -88,12 +89,22 @@ Key Features:
 - Compatibility with multiple data sources and formats
 - Enhanced security features
 
-Cloudberry Database supports both batch processing and real-time data
+Apache Cloudberry supports both batch processing and real-time data
 warehousing, making it a versatile solution for modern data
 environments.
 
-For more information, visit the official Cloudberry Database website
-at https://cloudberrydb.org.
+Apache Cloudberry (incubating) is an effort undergoing incubation at
+the Apache Software Foundation (ASF), sponsored by the Apache
+Incubator PMC.
+
+Incubation is required of all newly accepted projects until a further
+review indicates that the infrastructure, communications, and decision
+making process have stabilized in a manner consistent with other
+successful ASF projects.
+
+While incubation status is not necessarily a reflection of the
+completeness or stability of the code, it does indicate that the
+project has yet to be fully endorsed by the ASF.
 
 %prep
 # No prep needed for binary RPM

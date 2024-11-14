@@ -23,7 +23,7 @@
 #
 # Prerequisites:
 # - The rpm-build package must be installed (provides the rpmbuild command).
-# - The spec file must exist at ~/rpmbuild/SPECS/cloudberry-db.spec.
+# - The spec file must exist at ~/rpmbuild/SPECS/apache-cloudberry-db-incubating.spec.
 #
 # Error Handling:
 # The script includes checks to ensure:
@@ -95,7 +95,7 @@ fi
 check_commands
 
 # Define the spec file path
-SPEC_FILE=~/rpmbuild/SPECS/cloudberry-db.spec
+SPEC_FILE=~/rpmbuild/SPECS/apache-cloudberry-db-incubating.spec
 
 # Check if the spec file exists
 if [ ! -f "$SPEC_FILE" ]; then

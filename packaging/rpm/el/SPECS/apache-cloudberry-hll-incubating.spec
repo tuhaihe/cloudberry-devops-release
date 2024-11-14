@@ -1,22 +1,24 @@
 %global cloudberry_version %{?_cloudberry_version}%{!?_cloudberry_version:1.6}
 %global cloudberry_install_dir /usr/local/cloudberry-db
 
-Name:           cloudberry-hll
+Name:           apache-cloudberry-hll-incubating
 Version:        2.18.0
 Release:        %{?release}%{!?release:1}
 Summary:        HyperLogLog extension for Cloudberry Database %{cloudberry_version}
 License:        ASL 2.0
 URL:            https://github.com/citusdata/postgresql-hll
-Vendor:         Cloudberry Open Source
+Vendor:         Apache Cloudberry (incubating)
 Group:          Applications/Databases
 BuildArch:      x86_64
-Requires:       cloudberry-db >= %{cloudberry_version}
+Requires:       apache-cloudberry-db-incubating >= %{cloudberry_version}
 Prefix:         %{cloudberry_install_dir}
 
 %description
-HLL is an open-source PostgreSQL extension (compatible with Cloudberry Database %{cloudberry_version})
-adding HyperLogLog data structures as a native data type. HyperLogLog is a fixed-size,
-set-like structure used for distinct value counting with tunable precision.
+HLL is an open-source PostgreSQL extension (compatible with Apache
+Cloudberry (incubating) %{cloudberry_version}) adding HyperLogLog data
+structures as a native data type. HyperLogLog is a fixed-size,
+set-like structure used for distinct value counting with tunable
+precision.
 
 %prep
 # No prep needed for binary RPM
