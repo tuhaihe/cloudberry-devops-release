@@ -104,7 +104,7 @@ jobs:
           buildkitd-flags: --debug
 
       # Build the Docker image locally for testing
-      - name: Build Docker image for cbdb-test-${{ matrix.platform }}
+      - name: Build Docker image for incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest
         if: ${{ steps.platform-filter.outputs[matrix.platform] == 'true' }}
         uses: docker/build-push-action@v6
         with:
@@ -113,11 +113,11 @@ jobs:
           load: true   # Load into local Docker daemon for testing
           # Use caching for faster builds
           cache-from: |
-            type=registry,ref=${{ secrets.DOCKERHUB_USER }}/cbdb-test-${{ matrix.platform }}:latest
+            type=registry,ref=apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest
             type=gha,scope=docker-cbdb-test-${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=docker-cbdb-test-${{ matrix.platform }}
           tags: |
-            cbdb-test-${{ matrix.platform }}:latest
+            incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest
           # Add metadata labels for better image tracking
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
@@ -133,11 +133,11 @@ jobs:
           context: ./images/docker/cbdb/test/${{ matrix.platform }}
           push: true
           cache-from: |
-            type=registry,ref=${{ secrets.DOCKERHUB_USER }}/cbdb-test-${{ matrix.platform }}:latest
+            type=registry,ref=apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest
             type=gha,scope=docker-cbdb-test-${{ matrix.platform }}
           tags: |
-            ${{ secrets.DOCKERHUB_USER }}/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest
-            ${{ secrets.DOCKERHUB_USER }}/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}
+            apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest
+            apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
@@ -163,7 +163,7 @@ jobs:
 
           if [[ "${{ steps.platform-filter.outputs[matrix.platform] }}" == "true" ]]; then
             echo "#### 🐳 Docker Image" >> $GITHUB_STEP_SUMMARY
-            echo "- **Repository**: [\`${{ secrets.DOCKERHUB_USER }}/cbdb-test-${{ matrix.platform }}\`](https://hub.docker.com/r/${{ secrets.DOCKERHUB_USER }}/cbdb-test-${{ matrix.platform }})" >> $GITHUB_STEP_SUMMARY
+            echo "- **Repository**: [\`apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}\`](https://hub.docker.com/r/apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }})" >> $GITHUB_STEP_SUMMARY
             echo "- **Tags Pushed**:" >> $GITHUB_STEP_SUMMARY
             echo "  - \`latest\`" >> $GITHUB_STEP_SUMMARY
             echo "  - \`${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}\`" >> $GITHUB_STEP_SUMMARY
@@ -172,9 +172,9 @@ jobs:
             echo "#### 📋 Quick Reference" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
             echo "# Pull the image" >> $GITHUB_STEP_SUMMARY
-            echo "docker pull ${{ secrets.DOCKERHUB_USER }}/cbdb-test-${{ matrix.platform }}:${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}" >> $GITHUB_STEP_SUMMARY
+            echo "docker pull apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "# View image details" >> $GITHUB_STEP_SUMMARY
-            echo "docker inspect ${{ secrets.DOCKERHUB_USER }}/cbdb-test-${{ matrix.platform }}:${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}" >> $GITHUB_STEP_SUMMARY
+            echo "docker inspect apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
