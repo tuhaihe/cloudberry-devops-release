@@ -30,13 +30,6 @@
 #             3. Environment variable management
 #             4. Result file cleanup
 #
-# Required Environment Variables:
-#   None
-#
-# Optional Environment Variables:
-#   GITHUB_OUTPUT - GitHub Actions output file path
-#   MAKE_NAME    - Used in default log path construction
-#
 # Arguments:
 #   [log-file] - Path to test log file
 #                (defaults to build-logs/details/make-${MAKE_NAME}.log)
@@ -52,7 +45,9 @@
 #   total_tests      - Total number of tests
 #   failed_tests     - Number of failed tests
 #   passed_tests     - Number of passed tests
+#   ignored_tests    - Number of ignored tests
 #   failed_test_names - Names of failed tests (comma-separated)
+#   ignored_test_names - Names of ignored tests (comma-separated)
 #
 # Usage Examples:
 #   # Parse default log file:
@@ -103,15 +98,6 @@ fi
 
 source test_results.txt
 
-echo "Results loaded into environment variables:"
-echo "STATUS=$STATUS"
-echo "TOTAL_TESTS=$TOTAL_TESTS"
-echo "FAILED_TESTS=$FAILED_TESTS"
-echo "PASSED_TESTS=$PASSED_TESTS"
-if [ -n "${FAILED_TEST_NAMES:-}" ]; then
-    echo "FAILED_TEST_NAMES=$FAILED_TEST_NAMES"
-fi
-
 # If in GitHub Actions, set outputs
 if [ -n "${GITHUB_OUTPUT:-}" ]; then
     {
@@ -119,7 +105,9 @@ if [ -n "${GITHUB_OUTPUT:-}" ]; then
         echo "total_tests=$TOTAL_TESTS"
         echo "failed_tests=$FAILED_TESTS"
         echo "passed_tests=$PASSED_TESTS"
+        echo "ignored_tests=$IGNORED_TESTS"
         [ -n "${FAILED_TEST_NAMES:-}" ] && echo "failed_test_names=$FAILED_TEST_NAMES"
+        [ -n "${IGNORED_TEST_NAMES:-}" ] && echo "ignored_test_names=$IGNORED_TEST_NAMES"
     } >> "$GITHUB_OUTPUT"
 fi
 

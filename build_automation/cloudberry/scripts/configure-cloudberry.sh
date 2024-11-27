@@ -110,6 +110,8 @@ log_section_end "Environment Setup"
 log_section "Configure"
 execute_cmd ./configure --prefix=/usr/local/cloudberry-db \
             --disable-external-fts \
+            --enable-cassert \
+            --enable-debug-extensions \
             --enable-gpcloud \
             --enable-ic-proxy \
             --enable-mapreduce \
