@@ -140,15 +140,24 @@ RUN dnf makecache && \
     make -j$(nproc) && \
     make install -C ~/xerces-c-${XERCES_LATEST_RELEASE} && \
     rm -rf ~/xerces-c* && \
-    cd && GO_VERSION="go1.23.2" && \
-    GO_SHA256="542d3c1705f1c6a1c5a80d5dc62e2e45171af291e755d591c5e6531ef63b454e" && \
-    GO_URL="https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz" && \
+    cd && GO_VERSION="go1.23.4" && \
+    ARCH=$(uname -m) && \
+    if [ "${ARCH}" = "aarch64" ]; then \
+        GO_ARCH="arm64" && \
+        GO_SHA256="16e5017863a7f6071363782b1b8042eb12c6ca4f4cd71528b2123f0a1275b13e"; \
+    elif [ "${ARCH}" = "x86_64" ]; then \
+        GO_ARCH="amd64" && \
+        GO_SHA256="6924efde5de86fe277676e929dc9917d466efa02fb934197bc2eba35d5680971"; \
+    else \
+        echo "Unsupported architecture: ${ARCH}" && exit 1; \
+    fi && \
+    GO_URL="https://go.dev/dl/${GO_VERSION}.linux-${GO_ARCH}.tar.gz" && \
     wget -nv "${GO_URL}" && \
-    echo "${GO_SHA256}  ${GO_VERSION}.linux-amd64.tar.gz" | sha256sum -c - && \
-    tar xf "${GO_VERSION}.linux-amd64.tar.gz" && \
+    echo "${GO_SHA256}  ${GO_VERSION}.linux-${GO_ARCH}.tar.gz" | sha256sum -c - && \
+    tar xf "${GO_VERSION}.linux-${GO_ARCH}.tar.gz" && \
     mv go "/usr/local/${GO_VERSION}" && \
     ln -s "/usr/local/${GO_VERSION}" /usr/local/go && \
-    rm -f "${GO_VERSION}.linux-amd64.tar.gz" && \
+    rm -f "${GO_VERSION}.linux-${GO_ARCH}.tar.gz" && \
     echo 'export PATH=$PATH:/usr/local/go/bin' | tee -a /etc/profile.d/go.sh > /dev/null
 
 # --------------------------------------------------------------------

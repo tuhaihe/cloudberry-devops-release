@@ -18,8 +18,9 @@
 #
 # --------------------------------------------------------------------
 #
-# Purpose: Builds, tests and pushes Docker images for Apache Cloudberry DB test environments
-# Images are built for Rocky Linux 8 and 9, tested with TestInfra, and pushed to DockerHub
+# Purpose: Builds, tests and pushes multi-architecture Docker images for
+# Apache Cloudberry DB test environments. Images are built for both AMD64
+# and ARM64 architectures on Rocky Linux 8 and 9.
 #
 # Images are tagged with:
 # - cbdb-test-rocky8-latest
@@ -28,10 +29,14 @@
 # - cbdb-test-rocky9-{YYYYMMDD}-{git-short-sha}
 #
 # Features:
+# - Multi-architecture support (AMD64 and ARM64)
 # - Matrix build for multiple platforms
-# - Caching strategy for efficient builds
+# - QEMU emulation for cross-platform builds
+# - Buildx for efficient multi-arch builds
 # - Path filtering to only build changed platforms
 # - Comprehensive build summary and metadata
+#
+# --------------------------------------------------------------------
 
 name: docker-cbdb-test-containers
 
@@ -88,6 +93,12 @@ jobs:
         if: ${{ steps.platform-filter.outputs[matrix.platform] != 'true' }}
         run: echo "Skipping because the changes do not affect this platform"
 
+      # Set up QEMU for multi-architecture support
+      # This allows building ARM64 images on AMD64 infrastructure and vice versa
+      - name: Set up QEMU
+        if: ${{ steps.platform-filter.outputs[matrix.platform] == 'true' }}
+        uses: docker/setup-qemu-action@v3
+
       # Login to DockerHub for pushing images
       - name: Login to Docker Hub
         if: ${{ steps.platform-filter.outputs[matrix.platform] == 'true' }}
@@ -96,28 +107,45 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Setup Docker Buildx for efficient builds
+      # Setup Docker Buildx for efficient multi-architecture builds
       - name: Set up Docker Buildx
         if: ${{ steps.platform-filter.outputs[matrix.platform] == 'true' }}
         uses: docker/setup-buildx-action@v3
         with:
           buildkitd-flags: --debug
 
-      # Build the Docker image locally for testing
-      - name: Build Docker image for incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest
+      # Build and test images for each architecture
+      # This ensures both AMD64 and ARM64 variants work correctly
+      - name: Build and test images
+        if: ${{ steps.platform-filter.outputs[matrix.platform] == 'true' }}
+        run: |
+          # Build for each platform
+          for arch in amd64 arm64; do
+            echo "Building for $arch architecture..."
+            docker buildx build \
+              --platform linux/$arch \
+              --load \
+              -t apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-$arch-test \
+              ./images/docker/cbdb/test/${{ matrix.platform }}
+          done
+
+      # Build and push multi-architecture images
+      # Creates a manifest list that supports both architectures
+      - name: Build and Push Multi-arch Docker images
         if: ${{ steps.platform-filter.outputs[matrix.platform] == 'true' }}
         uses: docker/build-push-action@v6
         with:
           context: ./images/docker/cbdb/test/${{ matrix.platform }}
-          push: false  # Don't push yet, we'll test first
-          load: true   # Load into local Docker daemon for testing
+          push: true
+          platforms: linux/amd64,linux/arm64
           # Use caching for faster builds
           cache-from: |
             type=registry,ref=apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest
             type=gha,scope=docker-cbdb-test-${{ matrix.platform }}
-          cache-to: type=gha,mode=max,scope=docker-cbdb-test-${{ matrix.platform }}
+          # Tag with both latest and version-specific tags
           tags: |
-            incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest
+            apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest
+            apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}
           # Add metadata labels for better image tracking
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
@@ -125,56 +153,30 @@ jobs:
             org.opencontainers.image.created=${{ steps.version.outputs.BUILD_DATE }}
             org.opencontainers.image.version=${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}
 
-      # Push the image to DockerHub if tests passed
-      - name: Retag and Push Docker image to DockerHub
-        if: steps.platform-filter.outputs[matrix.platform] == 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: ./images/docker/cbdb/test/${{ matrix.platform }}
-          push: true
-          cache-from: |
-            type=registry,ref=apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest
-            type=gha,scope=docker-cbdb-test-${{ matrix.platform }}
-          tags: |
-            apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest
-            apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}
-          labels: |
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.created=${{ steps.version.outputs.BUILD_DATE }}
-            org.opencontainers.image.version=${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}
-
-      # Generate build summary
+      # Generate a detailed build summary in GitHub Actions UI
+      # This provides quick access to build information and image usage instructions
       - name: Build Summary
         if: always()
         run: |
           echo "### Build Summary for ${{ matrix.platform }} 🚀" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-
           echo "#### 🔍 Build Information" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Platform**: ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Architectures**: AMD64, ARM64" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit SHA**: [\`${{ github.sha }}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})" >> $GITHUB_STEP_SUMMARY
-          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Date**: ${{ steps.version.outputs.BUILD_DATE }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version Tag**: \`${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [[ "${{ steps.platform-filter.outputs[matrix.platform] }}" == "true" ]]; then
-            echo "#### 🐳 Docker Image" >> $GITHUB_STEP_SUMMARY
-            echo "- **Repository**: [\`apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}\`](https://hub.docker.com/r/apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }})" >> $GITHUB_STEP_SUMMARY
-            echo "- **Tags Pushed**:" >> $GITHUB_STEP_SUMMARY
-            echo "  - \`latest\`" >> $GITHUB_STEP_SUMMARY
-            echo "  - \`${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-
-            echo "#### 📋 Quick Reference" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "# Pull the image" >> $GITHUB_STEP_SUMMARY
-            echo "docker pull apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "# View image details" >> $GITHUB_STEP_SUMMARY
-            echo "docker inspect apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "#### 🐳 Docker Images" >> $GITHUB_STEP_SUMMARY
+          echo "- Latest tag: \`apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Version tag: \`apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-${{ steps.version.outputs.BUILD_DATE }}-${{ steps.version.outputs.SHA_SHORT }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 📋 Quick Reference" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Pull the image (automatically selects correct architecture)" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Pull specific architecture if needed" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull --platform linux/amd64 apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull --platform linux/arm64 apache/incubator-cloudberry:cbdb-test-${{ matrix.platform }}-latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

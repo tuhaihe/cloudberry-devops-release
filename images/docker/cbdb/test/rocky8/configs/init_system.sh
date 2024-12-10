@@ -163,6 +163,33 @@ EOF
 # --------------------------------------------------------------------
 source /etc/os-release
 
+# First, create the CPU info detection function
+get_cpu_info() {
+   ARCH=$(uname -m)
+   if [ "$ARCH" = "x86_64" ]; then
+       lscpu | grep 'Model name:' | awk '{print substr($0, index($0,$3))}'
+   elif [ "$ARCH" = "aarch64" ]; then
+       VENDOR=$(lscpu | grep 'Vendor ID:' | awk '{print $3}')
+       if [ "$VENDOR" = "Apple" ] || [ "$VENDOR" = "0x61" ]; then
+           echo "Apple Silicon ($ARCH)"
+       else
+           if [ -f /proc/cpuinfo ]; then
+               IMPL=$(grep "CPU implementer" /proc/cpuinfo | head -1 | awk '{print $3}')
+               PART=$(grep "CPU part" /proc/cpuinfo | head -1 | awk '{print $3}')
+               if [ ! -z "$IMPL" ] && [ ! -z "$PART" ]; then
+                   echo "ARM $ARCH (Implementer: $IMPL, Part: $PART)"
+               else
+                   echo "ARM $ARCH"
+               fi
+           else
+               echo "ARM $ARCH"
+           fi
+       fi
+   else
+       echo "Unknown architecture: $ARCH"
+   fi
+}
+
 # Check if Apache Cloudberry is installed and display its version
 if rpm -q apache-cloudberry-db-incubating > /dev/null 2>&1; then
     CBDB_VERSION=$(/usr/local/cbdb/bin/postgres --gp-version)
@@ -178,7 +205,7 @@ Container OS ........ : $NAME $VERSION
 User ................ : $(whoami)
 Container hostname .. : $(hostname)
 IP Address .......... : $(hostname -I | awk '{print $1}')
-CPU Info ............ : $(lscpu | grep 'Model name:' | awk '{print substr($0, index($0,$3))}')
+CPU Info ............ : $(get_cpu_info)
 CPU(s) .............. : $(nproc)
 Memory .............. : $(free -h | grep Mem: | awk '{print $2}') total
 ======================================================================
