@@ -84,9 +84,11 @@ RUN dnf makecache && \
         bison \
         bzip2-devel \
         diffutils \
+        file \
         flex \
         gcc \
         gcc-c++ \
+        gdb \
         glibc-langpack-en \
         glibc-locale-source \
         iproute \

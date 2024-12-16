@@ -77,6 +77,8 @@ ENV LANG=en_US.UTF-8
 # to reduce the image size.
 # --------------------------------------------------------------------
 RUN dnf install -y \
+        file \
+        gdb \
         glibc-locale-source \
         make \
         openssh \

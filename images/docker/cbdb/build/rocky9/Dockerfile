@@ -84,9 +84,11 @@ RUN dnf makecache && \
         bison \
         cmake3 \
         ed \
+        file \
         flex \
         gcc \
         gcc-c++ \
+        gdb \
         glibc-langpack-en \
         glibc-locale-source \
         initscripts \
