@@ -9,17 +9,19 @@
 # also includes error handling to provide meaningful feedback in case of failure.
 #
 # Usage:
-# ./build-rpm.sh -v <version> [-r <release>] [-h] [--dry-run]
+# ./build-rpm.sh -v <version> [-r <release>] [-d|--with-debug] [-h] [--dry-run]
 #
 # Options:
 #   -v, --version <version>    : Specify the version (required)
 #   -r, --release <release>    : Specify the release (optional, default is 1)
+#   -d, --with-debug           : Build with debug symbols (optional)
 #   -h, --help                 : Display this help and exit
 #   -n, --dry-run              : Show what would be done, without making any changes
 #
 # Example:
-#   ./build-rpm.sh -v 1.5.5 -r 2  # Build with version 1.5.5 and release 2
-#   ./build-rpm.sh -v 1.5.5        # Build with version 1.5.5 and default release 1
+#   ./build-rpm.sh -v 1.5.5 -r 2          # Build with version 1.5.5 and release 2
+#   ./build-rpm.sh -v 1.5.5               # Build with version 1.5.5 and default release 1
+#   ./build-rpm.sh -v 1.5.5 --with-debug  # Build with debug symbols
 #
 # Prerequisites:
 # - The rpm-build package must be installed (provides the rpmbuild command).
@@ -38,12 +40,14 @@ set -euo pipefail
 # Default values
 VERSION=""
 RELEASE="1"
+DEBUG_BUILD=false
 
 # Function to display usage information
 usage() {
   echo "Usage: $0 -v <version> [-r <release>] [-h] [--dry-run]"
   echo "  -v, --version <version>    : Specify the version (required)"
   echo "  -r, --release <release>    : Specify the release (optional, default is 1)"
+  echo "  -d, --with-debug           : Build with debug symbols (optional)"
   echo "  -h, --help                 : Display this help and exit"
   echo "  -n, --dry-run              : Show what would be done, without making any changes"
   exit 1
@@ -71,6 +75,10 @@ while [[ "$#" -gt 0 ]]; do
       RELEASE="$2"
       shift 2
       ;;
+    -d|--with-debug)
+      DEBUG_BUILD=true
+      shift
+      ;;
     -h|--help)
       usage
       ;;
@@ -79,8 +87,8 @@ while [[ "$#" -gt 0 ]]; do
       shift
       ;;
     *)
-      echo "Unknown option: $1"
-      usage
+      echo "Unknown option: ($1)"
+      shift
       ;;
   esac
 done
@@ -103,16 +111,22 @@ if [ ! -f "$SPEC_FILE" ]; then
   exit 1
 fi
 
+# Build the rpmbuild command based on options
+RPMBUILD_CMD="rpmbuild -bb \"$SPEC_FILE\" --define \"version $VERSION\" --define \"release $RELEASE\""
+if [ "$DEBUG_BUILD" = true ]; then
+    RPMBUILD_CMD+=" --with debug"
+fi
+
 # Dry-run mode
 if [ "${DRY_RUN:-false}" = true ]; then
   echo "Dry-run mode: This is what would be done:"
-  echo "  rpmbuild -bb \"$SPEC_FILE\" --define \"version $VERSION\" --define \"release $RELEASE\""
+  echo "  $RPMBUILD_CMD"
   exit 0
 fi
 
 # Run rpmbuild with the provided options
-echo "Building RPM with Version: $VERSION, Release: $RELEASE..."
-if ! rpmbuild -bb "$SPEC_FILE" --define "version $VERSION" --define "release $RELEASE"; then
+echo "Building RPM with Version: $VERSION, Release: $RELEASE$([ "$DEBUG_BUILD" = true ] && echo ", Debug: enabled")..."
+if ! eval "$RPMBUILD_CMD"; then
   echo "Error: rpmbuild failed."
   exit 1
 fi

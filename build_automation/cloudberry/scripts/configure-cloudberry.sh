@@ -51,6 +51,14 @@
 #
 # Optional Environment Variables:
 #   LOG_DIR - Directory for logs (defaults to ${SRC_DIR}/build-logs)
+#   ENABLE_DEBUG - Enable debug build options (true/false, defaults to
+#                  false)
+#
+#                 When true, enables:
+#                   --enable-debug
+#                   --enable-profiling
+#                   --enable-cassert
+#                   --enable-debug-extensions
 #
 # Prerequisites:
 #   - System dependencies must be installed:
@@ -106,12 +114,20 @@ log_section "Environment Setup"
 export LD_LIBRARY_PATH=/usr/local/cloudberry-db/lib:LD_LIBRARY_PATH
 log_section_end "Environment Setup"
 
+# Add debug options if ENABLE_DEBUG is set to "true"
+CONFIGURE_DEBUG_OPTS=""
+
+if [ "${ENABLE_DEBUG:-false}" = "true" ]; then
+    CONFIGURE_DEBUG_OPTS="--enable-debug \
+                          --enable-profiling \
+                          --enable-cassert \
+                          --enable-debug-extensions"
+fi
+
 # Configure build
 log_section "Configure"
 execute_cmd ./configure --prefix=/usr/local/cloudberry-db \
             --disable-external-fts \
-            --enable-cassert \
-            --enable-debug-extensions \
             --enable-gpcloud \
             --enable-ic-proxy \
             --enable-mapreduce \
@@ -119,6 +135,7 @@ execute_cmd ./configure --prefix=/usr/local/cloudberry-db \
             --enable-orca \
             --enable-pxf \
             --enable-tap-tests \
+            ${CONFIGURE_DEBUG_OPTS} \
             --with-gssapi \
             --with-ldap \
             --with-libxml \

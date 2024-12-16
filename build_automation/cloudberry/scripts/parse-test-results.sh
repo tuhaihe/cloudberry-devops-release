@@ -96,23 +96,5 @@ if [ ! -f test_results.txt ]; then
     exit 2
 fi
 
-source test_results.txt
-
-# If in GitHub Actions, set outputs
-if [ -n "${GITHUB_OUTPUT:-}" ]; then
-    {
-        echo "status=$STATUS"
-        echo "total_tests=$TOTAL_TESTS"
-        echo "failed_tests=$FAILED_TESTS"
-        echo "passed_tests=$PASSED_TESTS"
-        echo "ignored_tests=$IGNORED_TESTS"
-        [ -n "${FAILED_TEST_NAMES:-}" ] && echo "failed_test_names=$FAILED_TEST_NAMES"
-        [ -n "${IGNORED_TEST_NAMES:-}" ] && echo "ignored_test_names=$IGNORED_TEST_NAMES"
-    } >> "$GITHUB_OUTPUT"
-fi
-
-# Clean up
-rm -f test_results.txt
-
 # Return the perl script's exit code
 exit $perl_exit_code

@@ -1,8 +1,24 @@
 %define cloudberry_install_dir /usr/local/cloudberry-db
 
+# Add at the top of the spec file
+# Default to non-debug build
+%bcond_with debug
+
+# Conditional stripping based on debug flag
+%if %{with debug}
+%define __os_install_post %{nil}
+%define __strip /bin/true
+%define debug_package %{nil}
+%endif
+
 Name:           apache-cloudberry-db-incubating
 Version:        %{version}
+# In the release definition section
+%if %{with debug}
+Release:        %{release}.debug%{?dist}
+%else
 Release:        %{release}%{?dist}
+%endif
 Summary:        High-performance, open-source data warehouse based on PostgreSQL/Greenplum
 
 License:        ASL 2.0
