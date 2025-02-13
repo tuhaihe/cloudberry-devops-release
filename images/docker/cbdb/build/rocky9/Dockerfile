@@ -94,6 +94,7 @@ RUN dnf makecache && \
         initscripts \
         iproute \
         less \
+        lsof \
         m4 \
         net-tools \
         openssh-clients \

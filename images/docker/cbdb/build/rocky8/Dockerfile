@@ -100,6 +100,7 @@ RUN dnf makecache && \
         libuuid-devel \
         libxml2-devel \
         libzstd-devel \
+        lsof \
         lz4 \
         lz4-devel \
         make \
