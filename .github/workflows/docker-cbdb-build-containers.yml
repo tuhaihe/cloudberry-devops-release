@@ -76,7 +76,7 @@ jobs:
     # Matrix strategy to build for both Rocky Linux 8 and 9
     strategy:
       matrix:
-        platform: ['rocky8', 'rocky9']
+        platform: ['rocky8', 'rocky9', 'jammy']
 
     steps:
       # Checkout repository code with full history
@@ -103,6 +103,8 @@ jobs:
               - 'images/docker/cbdb/build/rocky8/**'
             rocky9:
               - 'images/docker/cbdb/build/rocky9/**'
+            jammy:
+              - 'images/docker/cbdb/build/jammy/**'
 
       # Set up QEMU for multi-architecture support
       # This allows building ARM64 images on AMD64 infrastructure and vice versa
