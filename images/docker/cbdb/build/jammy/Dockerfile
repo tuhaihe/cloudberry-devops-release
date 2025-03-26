@@ -140,7 +140,8 @@ RUN apt-get update -o Acquire::AllowInsecureRepositories=true && apt-get install
   pkg-config \
   python3.10 \
   python3.10-dev \
-  python3-distutils
+  python3-distutils \
+  sudo
 
 RUN apt-get install -y locales \
 && locale-gen "en_US.UTF-8" \
