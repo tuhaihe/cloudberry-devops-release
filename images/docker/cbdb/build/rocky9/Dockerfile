@@ -136,7 +136,8 @@ RUN dnf makecache && \
     dnf install -y --enablerepo=crb \
         libuv-devel \
         libyaml-devel \
-        perl-IPC-Run && \
+        perl-IPC-Run \
+        protobuf-devel && \
     dnf clean all && \
     cd && XERCES_LATEST_RELEASE=3.3.0 && \
     wget -nv "https://archive.apache.org/dist/xerces/c/3/sources/xerces-c-${XERCES_LATEST_RELEASE}.tar.gz" && \
