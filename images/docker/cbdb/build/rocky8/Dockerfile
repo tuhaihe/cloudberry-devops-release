@@ -54,7 +54,7 @@
 FROM rockylinux/rockylinux:8
 
 # Argument for configuring the timezone
-ARG TIMEZONE_VAR="Europe/San_Fransciso"
+ARG TIMEZONE_VAR="Asia/San_Fransciso"
 
 # Environment variables for locale and user
 ENV container=docker
