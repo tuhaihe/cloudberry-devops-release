@@ -79,7 +79,7 @@ init_environment "Cloudberry Demo Cluster Script" "${CLUSTER_LOG}"
 
 # Setup environment
 log_section "Environment Setup"
-source /usr/local/cloudberry-db/greenplum_path.sh || exit 1
+source /usr/local/cloudberry-db/cloudberry-env.sh || exit 1
 log_section_end "Environment Setup"
 
 # Verify SSH access

@@ -121,7 +121,7 @@ run_psql_cmd() {
 # Function to source Cloudberry environment
 source_cloudberry_env() {
     echo "=== Sourcing Cloudberry environment ===" | tee -a "${LOG_DIR}/environment.log"
-    source /usr/local/cloudberry-db/greenplum_path.sh
+    source /usr/local/cloudberry-db/cloudberry-env.sh
     source ${SRC_DIR}/../cloudberry/gpAux/gpdemo/gpdemo-env.sh
 }
 

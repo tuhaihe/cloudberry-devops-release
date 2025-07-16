@@ -186,7 +186,7 @@ RUN cp /tmp/90-cbdb-limits /etc/security/limits.d/90-cbdb-limits && \
     /usr/sbin/useradd gpadmin -g gpadmin -G wheel && \
     setcap cap_net_raw+ep /usr/bin/ping && \
     echo 'gpadmin ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/90-gpadmin && \
-    echo -e '\n# Add Cloudberry entries\nif [ -f /usr/local/cbdb/greenplum_path.sh ]; then\n  source /usr/local/cbdb/greenplum_path.sh\nfi' >> /home/gpadmin/.bashrc && \
+    echo -e '\n# Add Cloudberry entries\nif [ -f /usr/local/cbdb/cloudberry-env.sh ]; then\n  source /usr/local/cbdb/cloudberry-env.sh\nfi' >> /home/gpadmin/.bashrc && \
     ssh-keygen -A && \
     echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config && \
     localedef -i en_US -f UTF-8 en_US.UTF-8 && \
