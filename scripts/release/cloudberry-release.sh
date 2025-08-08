@@ -58,9 +58,8 @@
 #     or the path must be explicitly provided using --repo
 #   - Git user.name and user.email must be configured
 #   - Repository remote must be: git@github.com:apache/cloudberry.git
-#   - sha512sum command must be available (install GNU coreutils on macOS: brew install coreutils)
-#   - On macOS: GNU tar must be available (install with: brew install gnu-tar)
-#   - GPG command must be available for signing (install with: brew install gnupg on macOS)
+#   - Required tools: sha512sum, tar (gtar on macOS), gpg, xmllint
+#   - On macOS: brew install coreutils gnu-tar gnupg
 #
 # Examples:
 #   ./cloudberry-release.sh -s -t 2.0.0-incubating-rc1 --gpg-user your@apache.org
@@ -136,13 +135,21 @@ check_platform_and_tools() {
     fi
   fi
   
+  # Check xmllint tool
+  if command -v xmllint >/dev/null 2>&1; then
+    echo "✓ XML tool: xmllint"
+  else
+    echo "✗ XML tool: xmllint not found"
+    has_errors=true
+  fi
+  
   # Show installation guidance if there are errors
   if [[ "$has_errors" == true ]]; then
     echo
     echo "Missing required tools. Installation guidance:"
     case "$DETECTED_PLATFORM" in
       Linux)
-        echo "  Please install required packages: coreutils tar gnupg"
+        echo "  Please install required packages: coreutils tar gnupg libxml2-utils"
         ;;
       macOS)
         echo "  brew install coreutils gnu-tar gnupg"
@@ -151,7 +158,7 @@ check_platform_and_tools() {
         echo "  Please use Git Bash or install GNU tools"
         ;;
       *)
-        echo "  Please install GNU coreutils, tar, and GnuPG"
+        echo "  Please install GNU coreutils, tar, GnuPG, and libxml2"
         ;;
     esac
     echo
@@ -310,22 +317,16 @@ else
 fi
 
 if [[ -n "$REPO_ARG" ]]; then
-  if [[ -n "$REPO_ARG" ]]; then
-    if [[ ! -d "$REPO_ARG" || ! -f "$REPO_ARG/configure.ac" ]]; then
-      echo "ERROR: '$REPO_ARG' does not appear to be a valid Cloudberry source directory."
-      echo "Expected to find a 'configure.ac' file but it is missing."
-      echo
-      echo "Hint: Make sure you passed the correct --repo path to a valid Git clone."
-      exit 1
-    fi
-    cd "$REPO_ARG"
-  elif [[ ! -f configure.ac ]]; then
-    echo "ERROR: No Cloudberry source directory specified and no 'configure.ac' found in the current directory."
+  # Validate the specified repository path
+  if [[ ! -d "$REPO_ARG" || ! -f "$REPO_ARG/configure.ac" ]]; then
+    echo "ERROR: '$REPO_ARG' does not appear to be a valid Cloudberry source directory."
+    echo "Expected to find a 'configure.ac' file but it is missing."
     echo
-    echo "Hint: Either run this script from the root of a Cloudberry Git clone,"
-    echo "or use the --repo <path> option to specify the source directory."
+    echo "Hint: Make sure you passed the correct --repo path to a valid Git clone."
     exit 1
   fi
+  
+  # Change to the specified repository directory
   cd "$REPO_ARG"
 
   if [[ ! -d ".git" ]]; then
@@ -428,11 +429,7 @@ if [[ "$CONFIGURE_VERSION" != "$BASE_VERSION" ]]; then
   exit 1
 fi
 
-# Ensure xmllint is available
-if ! command -v xmllint >/dev/null 2>&1; then
-  echo "ERROR: xmllint is required but not installed."
-  exit 1
-fi
+
 
 # Extract version from pom.xml using xmllint with namespace stripping
 POM_VERSION=$(xmllint --xpath '//*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml 2>/dev/null || true)
@@ -658,8 +655,10 @@ section "Staging release: $TAG"
   fi
 
   # Move artifacts to top-level artifacts directory
-
-  ARTIFACTS_DIR="$(cd "$(dirname "$REPO_ARG")" && cd .. && pwd)/artifacts"
+  # At this point, we're always in the cloudberry repository directory
+  # (either we started there, or we cd'd there via --repo)
+  ARTIFACTS_DIR="$(cd .. && pwd)/artifacts"
+  
   mkdir -p "$ARTIFACTS_DIR"
 
   section "Moving Artifacts to $ARTIFACTS_DIR"
@@ -671,8 +670,7 @@ section "Staging release: $TAG"
   confirm_next_step
 
   section "Verifying sha512 ($ARTIFACTS_DIR/${TAR_NAME}.sha512) Release Artifact"
-  cd "$ARTIFACTS_DIR"
-  sha512sum -c "${TAR_NAME}.sha512"
+  (cd "$ARTIFACTS_DIR" && sha512sum -c "${TAR_NAME}.sha512")
   confirm_next_step
 
   section "Verifying GPG Signature ($ARTIFACTS_DIR/${TAR_NAME}.asc) Release Artifact"
